@@ -1,0 +1,581 @@
+<title>Brandtrack × Salesforce — Integration Test</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ground:      #0A1628;
+    --surface:     #0F1F38;
+    --surface-2:   #162540;
+    --border:      #1E3450;
+    --text:        #E8E4DC;
+    --muted:       #5A7A99;
+    --accent:      #00D9B8;
+    --accent-dim:  rgba(0, 217, 184, 0.10);
+    --success:     #2DEB8F;
+    --danger:      #FF5F3D;
+    --warning:     #F5C842;
+    --mono:        'Courier New', Courier, monospace;
+    --serif:       Georgia, 'Times New Roman', serif;
+    --sans:        system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .brand span { color: var(--accent); }
+
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--success);
+    background: rgba(45, 235, 143, 0.07);
+    border: 1px solid rgba(45, 235, 143, 0.2);
+    padding: 6px 14px;
+    border-radius: 20px;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: blink 2s ease infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot { animation: none; }
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 60px 32px 40px;
+    text-align: center;
+  }
+
+  .connection {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 36px;
+  }
+
+  .sys {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sys-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+  }
+
+  .sys-icon.sf {
+    background: rgba(0, 161, 224, 0.12);
+    border: 1px solid rgba(0, 161, 224, 0.28);
+    color: #00A1E0;
+  }
+
+  .sys-icon.bt {
+    background: var(--accent-dim);
+    border: 1px solid rgba(0, 217, 184, 0.28);
+    color: var(--accent);
+  }
+
+  .sys-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .wave-wrap {
+    flex: 1;
+    max-width: 300px;
+    height: 64px;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(22px, 4vw, 34px);
+    font-weight: normal;
+    font-style: italic;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .hero h1 em {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  .hero-sub {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Metrics ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  .metric {
+    background: var(--surface);
+    padding: 28px 32px;
+  }
+
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .metric-value {
+    font-family: var(--serif);
+    font-size: 42px;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .metric-value small {
+    font-size: 18px;
+    color: var(--muted);
+  }
+
+  .metric-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--success);
+  }
+
+  /* ── Section ── */
+  .section {
+    padding: 0 32px 40px;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── Test list ── */
+  .tests {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .test {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 16px;
+    background: var(--surface);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    transition: background 0.12s;
+  }
+
+  .test:hover { background: var(--surface-2); }
+
+  .indicator {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .indicator.pass { background: var(--success); }
+  .indicator.fail { background: var(--danger); }
+
+  .test-name { flex: 1; color: var(--text); }
+
+  .test-ms {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .test-code {
+    font-size: 11px;
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .test-code.ok  { color: var(--success); }
+  .test-code.err { color: var(--danger); }
+
+  /* ── Log ── */
+  .log-box {
+    background: var(--surface);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .log-bar {
+    background: var(--surface-2);
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .log-bar::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .log-entries {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .log-line {
+    display: grid;
+    grid-template-columns: 64px 44px 1fr 90px;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    align-items: baseline;
+  }
+
+  .l-time   { color: var(--muted); }
+  .l-method { color: var(--warning); }
+  .l-path   { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .l-status { text-align: right; }
+  .l-status.ok  { color: var(--success); }
+  .l-status.err { color: var(--danger); }
+
+  /* ── Footer ── */
+  footer {
+    padding: 22px 32px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .foot-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .foot-clock {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    opacity: 0.55;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 620px) {
+    .metrics { grid-template-columns: 1fr; }
+    .header, .section { padding-inline: 20px; }
+    .hero { padding: 40px 20px 32px; }
+    .wave-wrap { max-width: 140px; }
+    .log-line { grid-template-columns: 64px 44px 1fr; }
+    .l-status { display: none; }
+    footer { padding-inline: 20px; }
+    .metric { padding: 20px; }
+  }
+</style>
+
+<header class="header">
+  <div class="brand">BRANDTRACK<span> ×</span> SALESFORCE</div>
+  <div class="pill"><div class="dot"></div>CONNECTION LIVE</div>
+</header>
+
+<section class="hero">
+  <div class="connection">
+    <div class="sys">
+      <div class="sys-icon sf">SF</div>
+      <div class="sys-label">Salesforce</div>
+    </div>
+    <div class="wave-wrap">
+      <canvas id="wave"></canvas>
+    </div>
+    <div class="sys">
+      <div class="sys-icon bt">BT</div>
+      <div class="sys-label">Brandtrack</div>
+    </div>
+  </div>
+  <h1>Integration <em>Test Suite</em></h1>
+  <p class="hero-sub">v1.0.0 &nbsp;·&nbsp; 3 endpoints &nbsp;·&nbsp; staging</p>
+</section>
+
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-label">Tests Passed</div>
+    <div class="metric-value">12</div>
+    <div class="metric-note">↑ 100% pass rate</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Avg Response</div>
+    <div class="metric-value">241<small>ms</small></div>
+    <div class="metric-note">Within threshold</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Records Synced</div>
+    <div class="metric-value">37</div>
+    <div class="metric-note">12 accounts · 25 subs</div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-title">Test Results</div>
+  <div class="tests">
+    <div class="test">
+      <div class="indicator pass"></div>
+      <div class="test-name">OAuth 2.0 — token request</div>
+      <div class="test-ms">38ms</div>
+      <div class="test-code ok">200</div>
+    </div>
+    <div class="test">
+      <div class="indicator pass"></div>
+      <div class="test-name">GET /sobjects/Account — list</div>
+      <div class="test-ms">182ms</div>
+      <div class="test-code ok">200</div>
+    </div>
+    <div class="test">
+      <div class="indicator pass"></div>
+      <div class="test-name">POST /sobjects/Account — create record</div>
+      <div class="test-ms">241ms</div>
+      <div class="test-code ok">201</div>
+    </div>
+    <div class="test">
+      <div class="indicator pass"></div>
+      <div class="test-name">PATCH /sobjects/Account/:id — update</div>
+      <div class="test-ms">198ms</div>
+      <div class="test-code ok">204</div>
+    </div>
+    <div class="test">
+      <div class="indicator pass"></div>
+      <div class="test-name">GET /query — SOQL subscription filter</div>
+      <div class="test-ms">315ms</div>
+      <div class="test-code ok">200</div>
+    </div>
+    <div class="test">
+      <div class="indicator pass"></div>
+      <div class="test-name">Webhook — inbound event payload</div>
+      <div class="test-ms">12ms</div>
+      <div class="test-code ok">200</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-title">Activity Log</div>
+  <div class="log-box">
+    <div class="log-bar">live output · api.salesforce.com</div>
+    <div class="log-entries">
+      <div class="log-line">
+        <span class="l-time">09:42:31</span>
+        <span class="l-method">GET</span>
+        <span class="l-path">/services/data/v57.0/sobjects/Account</span>
+        <span class="l-status ok">200 OK</span>
+      </div>
+      <div class="log-line">
+        <span class="l-time">09:42:29</span>
+        <span class="l-method">POST</span>
+        <span class="l-path">/services/data/v57.0/sobjects/Account</span>
+        <span class="l-status ok">201 Created</span>
+      </div>
+      <div class="log-line">
+        <span class="l-time">09:42:27</span>
+        <span class="l-method">GET</span>
+        <span class="l-path">/services/data/v57.0/query?q=SELECT+Id+FROM+Subscription__c</span>
+        <span class="l-status ok">200 OK</span>
+      </div>
+      <div class="log-line">
+        <span class="l-time">09:42:25</span>
+        <span class="l-method">POST</span>
+        <span class="l-path">/services/oauth2/token</span>
+        <span class="l-status ok">200 OK</span>
+      </div>
+      <div class="log-line">
+        <span class="l-time">09:42:24</span>
+        <span class="l-method">PATCH</span>
+        <span class="l-path">/services/data/v57.0/sobjects/Account/0019000001A2B3C</span>
+        <span class="l-status ok">204 No Content</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-label">BRANDTRACK CORE &nbsp;·&nbsp; ENV: staging</div>
+  <div class="foot-clock" id="clk">—</div>
+</footer>
+
+<script>
+  // ── Canvas wave ──
+  const canvas = document.getElementById('wave');
+  const ctx = canvas.getContext('2d');
+  let t = 0;
+  const pts = [0, 0.18, 0.36, 0.54, 0.72].map((p, i) => ({
+    progress: p,
+    speed: 0.0038 + i * 0.0004
+  }));
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const r = canvas.getBoundingClientRect();
+    canvas.width  = r.width  * dpr;
+    canvas.height = r.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function waveY(x, w, h) {
+    return h / 2 + Math.sin((x / w) * Math.PI * 3.5 + t) * (h * 0.32);
+  }
+
+  function drawFrame() {
+    const r = canvas.getBoundingClientRect();
+    const w = r.width, h = r.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Wave line
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += 2) {
+      const y = waveY(x, w, h);
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = 'rgba(0,217,184,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Particles
+    for (const p of pts) {
+      const x = p.progress * w;
+      const y = waveY(x, w, h);
+
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 11);
+      g.addColorStop(0, 'rgba(0,217,184,0.55)');
+      g.addColorStop(1, 'rgba(0,217,184,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, 11, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#00D9B8';
+      ctx.beginPath();
+      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      p.progress += p.speed;
+      if (p.progress > 1) p.progress = 0;
+    }
+
+    t += 0.022;
+    requestAnimationFrame(drawFrame);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduced) {
+    drawFrame();
+  } else {
+    // Static wave only
+    const r = canvas.getBoundingClientRect();
+    const w = r.width, h = r.height;
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += 2) {
+      const y = h / 2 + Math.sin((x / w) * Math.PI * 3.5) * (h * 0.32);
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = 'rgba(0,217,184,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  // ── Live clock ──
+  function tick() {
+    const n = new Date();
+    const z = v => String(v).padStart(2, '0');
+    document.getElementById('clk').textContent =
+      z(n.getHours()) + ':' + z(n.getMinutes()) + ':' + z(n.getSeconds());
+  }
+  tick();
+  setInterval(tick, 1000);
+</script>
